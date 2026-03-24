@@ -6,7 +6,16 @@ urls = {
     "meditations": "https://www.gutenberg.org/cache/epub/2680/pg2680.txt",
     "enchiridion": "https://www.gutenberg.org/cache/epub/45109/pg45109.txt",
     "seneca_morals": "https://www.gutenberg.org/cache/epub/56075/pg56075.txt",
-    "zarathustra": "https://www.gutenberg.org/cache/epub/1998/pg1998.txt"
+    "zarathustra": "https://www.gutenberg.org/cache/epub/1998/pg1998.txt",
+    "nicomachean_ethics": "https://www.gutenberg.org/cache/epub/8438/pg8438.txt",
+    "the_republic": "https://www.gutenberg.org/cache/epub/1497/pg1497.txt",
+    "beyond_good_and_evil": "https://www.gutenberg.org/cache/epub/4363/pg4363.txt",
+    "the_prince": "https://www.gutenberg.org/cache/epub/1232/pg1232.txt",
+    "phaedo": "https://www.gutenberg.org/cache/epub/1658/pg1658.txt",
+    "symposium": "https://www.gutenberg.org/cache/epub/1600/pg1600.txt",
+    "art_of_war": "https://www.gutenberg.org/cache/epub/17405/pg17405.txt",
+    "tusculan": "https://www.gutenberg.org/cache/epub/14988/pg14988.txt",
+    "bacon_essays": "https://www.gutenberg.org/cache/epub/575/pg575.txt",
 }
 
 # Where each book's philosophy text actually start and end
@@ -15,6 +24,15 @@ boundaries = {
     "enchiridion":  ("There are things which are within our power", "Thus Socrates became perfect"),
     "seneca_morals": ("It is, perhaps, one of the most pernicious", "not to oppress them"),
     "zarathustra":  ("When Zarathustra was thirty years old", "like a morning sun coming out of gloomy mountains"),
+    "nicomachean_ethics": ("Every art, and every science reduced", "regulations are best for each"),
+    "the_republic": ("I went down yesterday to the Piraeus with Glaucon", "in this life and in the pilgrimage of a thousand"),
+    "beyond_good_and_evil": ("The Will to Truth, which is to tempt us to many a hazardous", "marvels of my solitude, you, my old, beloved--EVIL thoughts"),
+    "the_prince": ("All states, all powers, that have held", "should be born, not in Lucca"),
+    "phaedo": ("The doctrine of the immortality of the soul has sunk deep", "he was the"),
+    "symposium": ("Concerning the things about which you ask to be informed","In the evening he retired to rest"),
+    "art_of_war": ("The art of war is of vital importance to the State.","Spies are a most important"),
+    "tusculan": ("At a time when I had entirely, or to a great degree,","suddenly revives out of the most desperate"),
+    "bacon_essays": ("WHAT is truth? said jesting Pilate","have as great a watch"),
 }
 
 # Get the raw_text text within the range we need
