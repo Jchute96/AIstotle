@@ -63,6 +63,13 @@ def clean_text(text):
     # Remove lines that start with CHAPTER and are followed by a roman numeral
     text = re.sub(r'^CHAPTER\s+[IVXLCDM]+\.\s*$', '', text, flags=re.MULTILINE)
     
+    # Remove lines that start with chapter and have a title after the roman numerals
+    text = re.sub(r'^CHAPTER\s+[IVXLCDM]+\.\s+[A-Z\s]+$', '', text, flags=re.MULTILINE)
+    
+    # Remove lines that start with not all caps Chapter and are followed by a roman numeral
+    text = re.sub(r'^Chapter\s+[IVXLCDM]+\.\s*$', '', text, flags=re.MULTILINE)
+    
+    
     # Remove lines that are at least 10 characters long and consist of only capital letters and spaces
     text = re.sub(r'^[A-Z\s]{10,}$', '', text, flags=re.MULTILINE)
     
@@ -74,6 +81,12 @@ def clean_text(text):
     
     # Remove roman numeral prefixes from beginning of lines
     text = re.sub(r'^[IVXLCDM]+\.\s+', '', text, flags=re.MULTILINE)
+    
+    # Remove number prefixes from beginning of lines
+    text = re.sub(r'^[0-9]+\.\s+', '', text, flags=re.MULTILINE)
+    
+    # Remove lines that are just asterisks and spaces
+    text = re.sub(r'^\s*\*[\s\*]*$', '', text, flags=re.MULTILINE)
 
     # Condense the blank lines we created
     text = re.sub(r'\n{3,}', '\n\n', text)
