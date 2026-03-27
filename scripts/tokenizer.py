@@ -1,10 +1,4 @@
-# Train - learn the merge rules from the dataset
-# Encode - turn text into a list of numbers
-# Decode - turn a list of numbers back into text
-
-
 class BPETokenizer:
-    
     
     def __init__(self):
         
@@ -14,6 +8,7 @@ class BPETokenizer:
         self.merge_list = []
     
     
+    # Build the vocabulary and merge rules
     def train(self, text, vocab_size):
         
         # Get every unique char in the text to add to our initial vocabulary and sort it
@@ -61,7 +56,6 @@ class BPETokenizer:
         
             # List to store our new merged tokens
             merged_tokens = []
-        
             index = 0
         
             # Iterate through the tokens and replace our most_seen_pair of tokens with their merged version
@@ -85,7 +79,7 @@ class BPETokenizer:
             tokens = merged_tokens     
     
     
-    # Convert a users text into integers that are mapped in our vocabulary
+    # Convert a users text into integer ids
     def encode(self, text):
         
         token_ids = []
@@ -98,7 +92,6 @@ class BPETokenizer:
             
             index = 0
             merged_tokens = []
-            last_char_merged = False
             
             # Iterate through the users text and if we recognize a char pattern we have seen before in our merge list perform the merge on it 
             # and add to merged tokens list, otherwise just leave the char alone and add it
@@ -125,22 +118,21 @@ class BPETokenizer:
             
         # Return the encoded values of the users text
         return token_ids
-            
     
+          
+    # Convert the int ids back into a string
     def decode(self, ids):
-        # Convert list of integer IDs back to text
-        pass
-    
+        
+        decoded = ''
+        
+        # Create a new dictionary with the id and token strings swapped so we can easily look up id numbers
+        reverse_vocab = {value: key for key, value in self.vocab.items()}
+        
+        # Add the decoded strings to our return value
+        for id in ids:
+            decoded += reverse_vocab[id]
+        
+        return decoded
 
-
-tokenizer = BPETokenizer()
-
-tokenizer.train("low lower newest widest low lower low lowest newest", vocab_size=20)
-print(tokenizer.vocab)
-print('-----------------------------------------------------------------------------------------------------------------------------------------------------------------')
-print(tokenizer.merge_list)
-
-encoded = tokenizer.encode("lowest")
-print(encoded)
     
     
