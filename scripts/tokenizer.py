@@ -1,3 +1,7 @@
+import json
+
+# TODO handle unknown tokens that aren't in vocab
+
 class BPETokenizer:
     
     def __init__(self):
@@ -21,7 +25,7 @@ class BPETokenizer:
         # Convert the text into a list of chars that will be our tokens
         tokens = list(text)
         
-        # Keep adding new tokens and tupples to our vocab and merge_list until we reach the preset vocab size
+        # Keep adding new tokens and tuples to our vocab and merge_list until we reach the preset vocab size
         while len(self.vocab) < vocab_size:
             
             # Dictionary to store the count for each pair of tokens seen
@@ -34,7 +38,7 @@ class BPETokenizer:
                 if (tokens[i], tokens[i+1]) in pair_counts:
                     pair_counts[(tokens[i], tokens[i+1])] += 1
                 
-                # If we have not seen this pair before save the tokens as a tupple in the dict and set its value to 1
+                # If we have not seen this pair before save the tokens as a tuple in the dict and set its value to 1
                 else:
                     pair_counts[(tokens[i], tokens[i+1])] = 1
         
@@ -51,7 +55,7 @@ class BPETokenizer:
             # Add the new token to the vocabulary and create an id using the next available int
             self.vocab[new_token] = len(self.vocab)
         
-            # Append the most seen pair tupple to our merge list
+            # Append the most seen pair tuple to our merge list
             self.merge_list.append(most_seen_pair)
         
             # List to store our new merged tokens
@@ -133,6 +137,26 @@ class BPETokenizer:
             decoded += reverse_vocab[id]
         
         return decoded
-
     
     
+    # Save the trained vocab and merge rules to a json file
+    def save(self, filepath):
+        
+        # Create the dictionary with vocab and merge_list to save
+        data = {"vocab": self.vocab, "merge_list": self.merge_list}
+        
+        # Save the new dictionary to a file and use json.dump to make it a json formatted string
+        with open(filepath, "w") as file:
+            json.dump(data, file)
+     
+            
+    # Load a previous training data from a json file
+    def load(self, filepath):
+        
+        # Read the JSON file from filepath
+        with open(filepath, "r") as file:
+            data = json.load(file)
+            
+        # Restore self.vocab and self.merge_list and revert merge list back to tuples
+        self.vocab = data["vocab"]
+        self.merge_list = [tuple(merge) for merge in data["merge_list"]]
