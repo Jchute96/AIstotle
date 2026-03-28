@@ -1,6 +1,46 @@
 import json
+import time
 
 # TODO handle unknown tokens that aren't in vocab
+        
+class Node:
+    
+    def __init__(self, val):
+        
+        self.val = val
+        self.prev = None
+        self.next = None
+
+   
+# DoublyLinkedList class used to help track most frequent pairs to speed up training
+class DoublyLinkedList():
+    
+    def __init__(self):
+        self.head = None
+        self.tail = None
+    
+    
+    # Add nodes to the doubly linked list
+    def append(self, val):
+        curr_node = Node(val)
+    
+        if not self.head:
+            self.head = curr_node
+            self.tail = curr_node
+        else:
+            self.tail.next = curr_node
+            curr_node.prev = self.tail
+            self.tail = curr_node
+
+            
+def build_linked_list(tokens):
+    tokens_doubly_list = DoublyLinkedList()
+    
+    for token in tokens:
+        tokens_doubly_list.append(token)
+        
+    return tokens_doubly_list
+
 
 class BPETokenizer:
     
@@ -25,23 +65,35 @@ class BPETokenizer:
         # Convert the text into a list of chars that will be our tokens
         tokens = list(text)
         
-        # Keep adding new tokens and tuples to our vocab and merge_list until we reach the preset vocab size
-        while len(self.vocab) < vocab_size:
-            
-            # Dictionary to store the count for each pair of tokens seen
-            pair_counts = {}
+        # Create a doubly linked list using the tokens to iterate through
+        tokens_doubly_list = build_linked_list(tokens)
         
-            # Iterate through the tokens and count how many times each token pair is seen
-            for i in range(len(tokens) - 1):
+        # Dictionary to store the counts for each pair of tokens seen as well as the first node associated with the pair
+        pair_counts = {}
+        pair_nodes = {}
+        
+        curr_node = tokens_doubly_list.head
             
-                # If we have seen this pair of tokens before add 1 to its count
-                if (tokens[i], tokens[i+1]) in pair_counts:
-                    pair_counts[(tokens[i], tokens[i+1])] += 1
+        # Iterate through the tokens and count how many times each token pair is seen
+        while curr_node:
                 
+            if curr_node.next:
+                    
+                # If we have seen this pair of tokens before add 1 to its count
+                if (curr_node.val, curr_node.next.val) in pair_counts:
+                    pair_counts[(curr_node.val, curr_node.next.val)] += 1
+                    pair_nodes[(curr_node.val, curr_node.next.val)].append(curr_node)
+                    
                 # If we have not seen this pair before save the tokens as a tuple in the dict and set its value to 1
                 else:
-                    pair_counts[(tokens[i], tokens[i+1])] = 1
+                    pair_counts[(curr_node.val, curr_node.next.val)] = 1
+                    pair_nodes[(curr_node.val, curr_node.next.val)] = [curr_node]
+                
+            curr_node = curr_node.next
         
+        # Keep adding new tokens and tuples to our vocab and merge_list until we reach the preset vocab size
+        while len(self.vocab) < vocab_size:
+                
             # Get the value for every key in the dictionary and return the key with the biggest value  
             most_seen_pair = max(pair_counts, key=pair_counts.get)
             
@@ -57,31 +109,51 @@ class BPETokenizer:
         
             # Append the most seen pair tuple to our merge list
             self.merge_list.append(most_seen_pair)
-        
-            # List to store our new merged tokens
-            merged_tokens = []
-            index = 0
-        
-            # Iterate through the tokens and replace our most_seen_pair of tokens with their merged version
-            while index < len(tokens) - 1:
-            
-                # If current tokens match our most seen pair merge them, add them to merged list, and skip the next index
-                if (tokens[index], tokens[index+1]) == most_seen_pair:
-                    merged_tokens.append(tokens[index] + tokens[index+1])
-                    index += 2
+
+            # Most seen pair is merged so we must alter surrounding token counts and values to compensate for it
+            for node in pair_nodes[most_seen_pair]:
                 
-                # Else just add it like normal
-                else:
-                    merged_tokens.append(tokens[index])
-                    index += 1 
-            
-            # Add last token if it was not appended
-            if index == len(tokens) - 1:
-                merged_tokens.append(tokens[index])
-        
-            # Set tokens to the new merged tokens
-            tokens = merged_tokens     
-    
+                # Decrement count of the most seen pair since it has been removed
+                pair_counts[most_seen_pair] -= 1
+                
+                # Decrement the old pair that was formed, increment new pair that is formed, and add new pair to pair_nodes
+                if node.prev:
+                    # Only decrement if pair still exists
+                    if node.prev and (node.prev.val, most_seen_pair[0]) in pair_counts:
+                        pair_counts[(node.prev.val, most_seen_pair[0])] -= 1
+                    
+                    if (node.prev.val, new_token) in pair_counts:
+                        pair_counts[(node.prev.val, new_token)] += 1
+                        pair_nodes[(node.prev.val, new_token)].append(node.prev)
+                        
+                    else:
+                        pair_counts[(node.prev.val, new_token)] = 1
+                        pair_nodes[(node.prev.val, new_token)] = [node.prev]
+                                
+                # Change the value of the node associated with the most seen pair to the new merged value
+                node.val = new_token
+                
+                # Decrement the old pair that was formed by the last node of the merged pair and next node
+                if node.next and node.next.next:
+                    # Only decrement if pair still exists
+                    if (most_seen_pair[1], node.next.next.val) in pair_counts:
+                        pair_counts[(most_seen_pair[1], node.next.next.val)] -= 1
+
+                # Skip over the merged node
+                if node.next:
+                    node.next = node.next.next
+                
+                # Change the prev of the next next node to the new valued node, increment the newly created pair, and add new pair to pair_nodes
+                if node.next:
+                    node.next.prev = node
+                    
+                    if (new_token, node.next.val) in pair_counts:
+                        pair_counts[(new_token, node.next.val)] += 1
+                        pair_nodes[(new_token, node.next.val)].append(node)
+                    else:
+                        pair_counts[(new_token, node.next.val)] = 1
+                        pair_nodes[(new_token, node.next.val)] = [node]
+                        
     
     # Convert a users text into integer ids
     def encode(self, text):
