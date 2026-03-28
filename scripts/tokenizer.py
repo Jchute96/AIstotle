@@ -1,5 +1,4 @@
 import json
-import time
 
 # TODO handle unknown tokens that aren't in vocab
         
