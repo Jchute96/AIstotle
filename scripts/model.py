@@ -9,7 +9,7 @@ class AttentionHead(nn.Module):
         
         super().__init__()
         
-        # Create three vectors that are responsible for the query, key, and value
+        # Create three matrices that are responsible for the query, key, and value
         self.query = nn.Linear(embedding_dimension, head_size)
         self.key = nn.Linear(embedding_dimension, head_size)
         self.value = nn.Linear(embedding_dimension, head_size)
@@ -56,6 +56,26 @@ class MultiHeadAttention(nn.Module):
         
         # Pass x to each heads forward method and concatenate the results together
         return torch.cat([head(x) for head in self.heads], dim=-1)
+    
+
+class FeedForward(nn.Module):
+    
+    def __init__(self, embedding_dimension):
+        
+        super().__init__()
+        
+        # Create a set of layers for input to pass sequentially through
+        self.layers = nn.Sequential(
+            # Expand the vectors dimension to 4 x embedding dimension size
+            nn.Linear(embedding_dimension, 4 * embedding_dimension),
+            # Set any negative numbers to 0
+            nn.ReLU(),
+            # Reduce the vectors dimension to original dimension size
+            nn.Linear(4 * embedding_dimension, embedding_dimension)
+        )
+        
+    def forward(self, x):
+        return self.layers(x)
         
 
 # Inherits from Pytorch's nn module that handles neural networks
