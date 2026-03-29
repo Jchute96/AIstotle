@@ -1,6 +1,44 @@
 import torch
 import torch.nn as nn
 
+
+# Inherits from Pytorch's nn module that handles neural networks
+class AttentionHead(nn.Module):
+    
+    def __init__(self, embedding_dimension, head_size):
+        
+        super().__init__()
+        
+        # Create three vectors that are responsible for the query, key, and value
+        self.query = nn.Linear(embedding_dimension, head_size)
+        self.key = nn.Linear(embedding_dimension, head_size)
+        self.value = nn.Linear(embedding_dimension, head_size)
+        
+        self.head_size = head_size
+        
+    
+    def forward(self, x):
+        
+        # Create unique query, key, and value vectors for each token embedding in x
+        query_vector = self.query(x)
+        key_vector = self.key(x)
+        value_vector = self.value(x)
+        
+        # Calculate the relevance scores by using the dot product to compare each tokens query and key vectors
+        relevance_scores = torch.matmul(query_vector, key_vector.transpose(-2, -1))
+        
+        # Scale the scores down by dividing by the square root of head_size
+        relevance_scores = relevance_scores / (self.head_size ** 0.5)
+        
+        # Convert relevance scores into probabilities ranging from 0 to 1 that represent how related each token is to the others
+        relevance_weights = torch.softmax(relevance_scores, dim=-1)
+        
+        # Multiply each tokens relevance weights with the value vector of each other token to get the specific context between a token and other tokens
+        context_vector = torch.matmul(relevance_weights, value_vector)
+        
+        return context_vector
+        
+        
 # Inherits from Pytorch's nn module that handles neural networks
 class Transformer(nn.Module):
 
@@ -34,4 +72,3 @@ class Transformer(nn.Module):
     
         # Return the token and position embeddings added together
         return token_embeddings + position_embeddings
-        
