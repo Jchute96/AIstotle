@@ -37,8 +37,27 @@ class AttentionHead(nn.Module):
         context_vector = torch.matmul(relevance_weights, value_vector)
         
         return context_vector
+
+
+class MultiHeadAttention(nn.Module):
+    
+    def __init__(self, embedding_dimension, num_heads):
         
+        super().__init__()
         
+        # Get the head size 
+        head_size = embedding_dimension // num_heads
+        
+        # Create all of the attention heads
+        self.heads = nn.ModuleList([ AttentionHead(embedding_dimension, head_size) for head in range(num_heads)])
+        
+    
+    def forward(self, x):
+        
+        # Pass x to each heads forward method and concatenate the results together
+        return torch.cat([head(x) for head in self.heads], dim=-1)
+        
+
 # Inherits from Pytorch's nn module that handles neural networks
 class Transformer(nn.Module):
 
