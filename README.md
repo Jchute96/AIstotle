@@ -5,5 +5,5 @@ A small transformer LLM built from scratch as a learning project and trained on 
 - [x] Data pipeline
 - [x] BPE Tokenizer
 - [x] Transformer architecture
-- [ ] Training loop
+- [x] Training loop
 - [ ] Inference
