@@ -111,3 +111,33 @@ class Transformer(nn.Module):
     
         # Return the token and position embeddings added together
         return token_embeddings + position_embeddings
+
+
+class TransformerBlock(nn.Module):
+    
+    def __init__(self, embedding_dimension, num_heads):
+        
+        super().__init__()
+        
+        # Layer that finds relationship between tokens
+        self.attention = MultiHeadAttention(embedding_dimension, num_heads)
+        
+        # Layer that hadnles processing and transforming the context
+        self.feed_forward = FeedForward(embedding_dimension)
+        
+        # Normalization layers that keep numbers in a good range before each other layer
+        self.norm1 = nn.LayerNorm(embedding_dimension)
+        self.norm2 = nn.LayerNorm(embedding_dimension)
+    
+    def forward(self, x):
+        
+        # Normalize x then apply the attention layer and add the original input back to maintain residual connection
+        # The residual connection makes it so that original info is not lost if the layer learns something bad
+        x = x + self.attention(self.norm1(x))
+        
+        # Normalize x then apply the feed forward layer and add the original input back to maintain residual connection
+        x = x + self.feed_forward(self.norm2(x))
+        
+        return x
+    
+    
