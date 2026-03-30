@@ -4,6 +4,6 @@ A small transformer LLM built from scratch as a learning project and trained on 
 ## Roadmap
 - [x] Data pipeline
 - [x] BPE Tokenizer
-- [ ] Transformer architecture
+- [x] Transformer architecture
 - [ ] Training loop
 - [ ] Inference

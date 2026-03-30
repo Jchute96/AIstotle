@@ -76,12 +76,41 @@ class FeedForward(nn.Module):
         
     def forward(self, x):
         return self.layers(x)
+
+
+class TransformerBlock(nn.Module):
+    
+    def __init__(self, embedding_dimension, num_heads):
         
+        super().__init__()
+        
+        # Layer that finds relationship between tokens
+        self.attention = MultiHeadAttention(embedding_dimension, num_heads)
+        
+        # Layer that handles processing and transforming the context
+        self.feed_forward = FeedForward(embedding_dimension)
+        
+        # Normalization layers that keep numbers in a good range before each other layer
+        self.norm1 = nn.LayerNorm(embedding_dimension)
+        self.norm2 = nn.LayerNorm(embedding_dimension)
+    
+    
+    def forward(self, x):
+        
+        # Normalize x then apply the attention layer and add the original input back to maintain residual connection
+        # The residual connection makes it so that original info is not lost if the layer learns something bad
+        x = x + self.attention(self.norm1(x))
+        
+        # Normalize x then apply the feed forward layer and add the original input back to maintain residual connection
+        x = x + self.feed_forward(self.norm2(x))
+        
+        return x
+      
 
 # Inherits from Pytorch's nn module that handles neural networks
 class Transformer(nn.Module):
 
-    def __init__(self, vocab_size, embedding_dimension, context_length):
+    def __init__(self, vocab_size, embedding_dimension, context_length, num_blocks, num_heads):
         
         # Run nn.Modules initialization
         super().__init__()
@@ -94,6 +123,15 @@ class Transformer(nn.Module):
         # These will contain our token and positon embeddings
         self.token_embedding = nn.Embedding(vocab_size, embedding_dimension)
         self.position_embedding = nn.Embedding(context_length, embedding_dimension)
+        
+        # Create the individual transformer blocks
+        self.blocks = nn.ModuleList([TransformerBlock(embedding_dimension, num_heads) for block in range(num_blocks)])
+        
+        # Normalization layer
+        self.norm = nn.LayerNorm(embedding_dimension)
+        
+        # Convert the tokens to scores that show how likely a token is to come next
+        self.lm_head = nn.Linear(embedding_dimension, vocab_size)
         
     
     # Takes token ids for a batch and translates them into a grid of meaning vectors and position vectors
@@ -109,35 +147,16 @@ class Transformer(nn.Module):
         # Get the position embeddings for every position
         position_embeddings = self.position_embedding(positions)
     
-        # Return the token and position embeddings added together
-        return token_embeddings + position_embeddings
-
-
-class TransformerBlock(nn.Module):
-    
-    def __init__(self, embedding_dimension, num_heads):
+        # Store the token and position embeddings added together
+        x = token_embeddings + position_embeddings
         
-        super().__init__()
+        # Pass embedded vectors through each of the transformer blocks to get context
+        for block in self.blocks:
+            x = block(x)
         
-        # Layer that finds relationship between tokens
-        self.attention = MultiHeadAttention(embedding_dimension, num_heads)
-        
-        # Layer that hadnles processing and transforming the context
-        self.feed_forward = FeedForward(embedding_dimension)
-        
-        # Normalization layers that keep numbers in a good range before each other layer
-        self.norm1 = nn.LayerNorm(embedding_dimension)
-        self.norm2 = nn.LayerNorm(embedding_dimension)
-    
-    def forward(self, x):
-        
-        # Normalize x then apply the attention layer and add the original input back to maintain residual connection
-        # The residual connection makes it so that original info is not lost if the layer learns something bad
-        x = x + self.attention(self.norm1(x))
-        
-        # Normalize x then apply the feed forward layer and add the original input back to maintain residual connection
-        x = x + self.feed_forward(self.norm2(x))
+        # Normalize context vectors then apply lm_head layer
+        x = self.lm_head(self.norm(x))
         
         return x
-    
+
     
