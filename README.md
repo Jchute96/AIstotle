@@ -1,6 +1,6 @@
 # AIstotle — The Modern Philosopher
 
-A transformer LLM built from scratch in PyTorch and trained on classical philosophy texts — Aristotle, Plato, Marcus Aurelius, Nietzsche, Seneca, and others.
+A transformer LLM built from scratch in PyTorch and trained on classical philosophy texts such as Aristotle, Plato, Marcus Aurelius, Nietzsche, Seneca, and others.
 
 ## What I Built
 
