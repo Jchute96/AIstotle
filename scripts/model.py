@@ -33,6 +33,11 @@ class AttentionHead(nn.Module):
         # Scale the scores down by dividing by the square root of head_size
         relevance_scores = relevance_scores / (self.head_size ** 0.5)
         
+        # Use masking to prevent tokens from factoring in the scores of tokens after their position
+        sequence_len = relevance_scores.shape[-1]
+        mask = torch.triu(torch.ones(sequence_len, sequence_len,  device=x.device), diagonal=1).bool()
+        relevance_scores = relevance_scores.masked_fill(mask, float('-inf'))
+        
         # Convert relevance scores into probabilities ranging from 0 to 1 that represent how related each token is to the others
         # And use dropout to prevent the model from relying on a single token relationship
         relevance_weights = self.dropout(torch.softmax(relevance_scores, dim=-1))
@@ -55,11 +60,18 @@ class MultiHeadAttention(nn.Module):
         # Create all of the attention heads
         self.heads = nn.ModuleList([ AttentionHead(embedding_dimension, head_size) for head in range(num_heads)])
         
+        # Layer used when we merge heads together so that the model can better learn which heads matter most
+        self.projection = nn.Linear(embedding_dimension, embedding_dimension)
+        
     
     def forward(self, x):
         
         # Pass x to each heads forward method and concatenate the results together
-        return torch.cat([head(x) for head in self.heads], dim=-1)
+        x = torch.cat([head(x) for head in self.heads], dim=-1)
+        
+        return self.projection(x)
+    
+
     
 
 class FeedForward(nn.Module):

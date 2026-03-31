@@ -60,11 +60,11 @@ embedding_dimension = 256
 context_length = 256
 num_blocks = 4
 num_heads = 4
-batch_size = 16
+batch_size = 32
 # Controls the adjustment size in model numbers during training
 learning_rate = .0003
 # Controls how many times the training loop runs
-max_steps = 20000
+max_steps = 50000
 device = ""
 
 # Try to use GPU otherwise use CPU 
