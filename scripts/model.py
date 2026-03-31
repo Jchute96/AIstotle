@@ -16,6 +16,9 @@ class AttentionHead(nn.Module):
         
         self.head_size = head_size
         
+        # Turn off 20% of neurons during training so model can not rely on memorizing specific patterns
+        self.dropout = nn.Dropout(0.2)
+        
     
     def forward(self, x):
         
@@ -31,7 +34,8 @@ class AttentionHead(nn.Module):
         relevance_scores = relevance_scores / (self.head_size ** 0.5)
         
         # Convert relevance scores into probabilities ranging from 0 to 1 that represent how related each token is to the others
-        relevance_weights = torch.softmax(relevance_scores, dim=-1)
+        # And use dropout to prevent the model from relying on a single token relationship
+        relevance_weights = self.dropout(torch.softmax(relevance_scores, dim=-1))
         
         # Multiply each tokens relevance weights with the value vector of each other token to get the specific context between a token and other tokens
         context_vector = torch.matmul(relevance_weights, value_vector)
@@ -93,16 +97,18 @@ class TransformerBlock(nn.Module):
         # Normalization layers that keep numbers in a good range before each other layer
         self.norm1 = nn.LayerNorm(embedding_dimension)
         self.norm2 = nn.LayerNorm(embedding_dimension)
+        
+        self.dropout = nn.Dropout(0.2)
     
     
     def forward(self, x):
         
         # Normalize x then apply the attention layer and add the original input back to maintain residual connection
         # The residual connection makes it so that original info is not lost if the layer learns something bad
-        x = x + self.attention(self.norm1(x))
+        x = x + self.dropout(self.attention(self.norm1(x)))
         
         # Normalize x then apply the feed forward layer and add the original input back to maintain residual connection
-        x = x + self.feed_forward(self.norm2(x))
+        x = x + self.dropout(self.feed_forward(self.norm2(x)))
         
         return x
       
@@ -133,6 +139,8 @@ class Transformer(nn.Module):
         # Convert the tokens to scores that show how likely a token is to come next
         self.lm_head = nn.Linear(embedding_dimension, vocab_size)
         
+        self.dropout = nn.Dropout(0.2)  
+        
     
     # Takes token ids for a batch and translates them into a grid of meaning vectors and position vectors
     def forward(self, x):
@@ -148,7 +156,8 @@ class Transformer(nn.Module):
         position_embeddings = self.position_embedding(positions)
     
         # Store the token and position embeddings added together
-        x = token_embeddings + position_embeddings
+        # And apply dropout to prevent memorizing word for word instead of learning general patterns
+        x = self.dropout(token_embeddings + position_embeddings)
         
         # Pass embedded vectors through each of the transformer blocks to get context
         for block in self.blocks:

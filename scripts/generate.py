@@ -32,7 +32,7 @@ model.load_state_dict(torch.load("data/model.pth"))
 model.eval()
 
 
-def generate(prompt, max_new_tokens=100, temperature=0.3):
+def generate(prompt, max_new_tokens=100, temperature=0.1):
     
     # Encode the prompt into int ids
     token_ids = tokenizer.encode(prompt)
