@@ -66,3 +66,5 @@ def generate(prompt, max_new_tokens=100, temperature=0.1):
     # Decode and return the newly created response
     return tokenizer.decode(token_ids[0].tolist())
 
+print(generate("Who am I?", temperature=0.6))
+
