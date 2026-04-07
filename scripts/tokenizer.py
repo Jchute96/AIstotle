@@ -1,7 +1,7 @@
 import json
+import re
 
-# TODO handle unknown tokens that aren't in vocab
-        
+      
 class Node:
     
     def __init__(self, val):
@@ -57,9 +57,18 @@ class BPETokenizer:
         # Get every unique char in the text to add to our initial vocabulary and sort it
         unique_chars = sorted(set(text))
         
-        # Add each unique char to our vocab dictionary along with its id number starting from zero
-        for int_id, char in enumerate(unique_chars):
+        # Make it so [UNK] tokens start at index 0 in the vocab
+        self.vocab["[UNK]"] = 0
+        
+        # Add each unique char to our vocab dictionary along with its id number starting from 1
+        for int_id, char in enumerate(unique_chars, start=1):
             self.vocab[char] = int_id
+            
+        # Add the other special tokens used later for fine tuning
+        special_tokens = ["[QUESTION]", "[ANSWER]", "<|endoftext|>"]
+        
+        for token in special_tokens:
+            self.vocab[token] = len(self.vocab)
         
         # Convert the text into a list of chars that will be our tokens
         tokens = list(text)
@@ -158,38 +167,53 @@ class BPETokenizer:
     def encode(self, text):
         
         token_ids = []
+        special_tokens = ["[UNK]", "[QUESTION]", "[ANSWER]"]
         
-        # Break the text into a list of individual chars
-        tokens = list(text)
+        pattern = "(" + "|".join(re.escape(t) for t in special_tokens) + ")"
         
-        # Iterate through the merges we have seen in our merge list
-        for merge in self.merge_list:
+        # Splits the string into chunks based off of our special tokens
+        chunks = re.split(pattern, text)
+        
+        for chunk in chunks:
             
-            index = 0
-            merged_tokens = []
+            # Append the special token if it is seen in this chunk
+            if chunk in special_tokens:
+                token_ids.append(self.vocab[chunk])
             
-            # Iterate through the users text and if we recognize a char pattern we have seen before in our merge list perform the merge on it 
-            # and add to merged tokens list, otherwise just leave the char alone and add it
-            while index < len(tokens) - 1:
+            # If this chunk has something in it perform encoding
+            elif chunk:
                 
-                if (tokens[index], tokens[index+1]) == merge:
-                    merged_tokens.append(tokens[index] + tokens[index+1])
-                    index += 2
+                # Break the chunk into a list of individual chars
+                tokens = list(chunk)
                 
-                else:
-                    merged_tokens.append(tokens[index])
-                    index += 1
+                # Iterate through the merges we have seen in our merge list
+                for merge in self.merge_list:
             
-            # Add last token if it was not appended
-            if index == len(tokens) - 1:
-                merged_tokens.append(tokens[index])
+                    index = 0
+                    merged_tokens = []
             
-            # Set tokens to the new merged tokens
-            tokens = merged_tokens
+                    # Iterate through the users text and if we recognize a char pattern we have seen before in our merge list perform the merge on it 
+                    # and add to merged tokens list, otherwise just leave the char alone and add it
+                    while index < len(tokens) - 1:
+                
+                        if (tokens[index], tokens[index+1]) == merge:
+                            merged_tokens.append(tokens[index] + tokens[index+1])
+                            index += 2
+                
+                        else:
+                            merged_tokens.append(tokens[index])
+                            index += 1
+            
+                    # Add last token if it was not appended
+                    if index == len(tokens) - 1:
+                        merged_tokens.append(tokens[index])
+            
+                    # Set tokens to the new merged tokens
+                    tokens = merged_tokens
  
-        # Get the corresponding int ids for each token in our users text
-        for token in tokens:
-            token_ids.append(self.vocab[token])
+                # Get the corresponding int ids for each token in our users text. If it was not seen before replace it with the UNK token value
+                for token in tokens:
+                    token_ids.append(self.vocab.get(token, self.vocab["[UNK]"]))
             
         # Return the encoded values of the users text
         return token_ids
@@ -231,3 +255,17 @@ class BPETokenizer:
         # Restore self.vocab and self.merge_list and revert merge list back to tuples
         self.vocab = data["vocab"]
         self.merge_list = [tuple(merge) for merge in data["merge_list"]]
+        
+        
+if __name__ == "__main__":
+    
+    with open("data/dataset.txt", "r") as file:
+        text = file.read()
+    
+    tokenizer = BPETokenizer()
+    
+    tokenizer.train(text, 8000)
+    
+    tokenizer.save("data/tokenizer.json")
+    
+    print("Tokenization complete!")

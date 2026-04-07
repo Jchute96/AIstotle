@@ -1,6 +1,6 @@
 import os
 import torch 
-import torch.nn as nn
+import torch.nn
 from model import Transformer
 from tokenizer import BPETokenizer
 
@@ -40,7 +40,7 @@ with open("data/dataset.txt", 'r') as file:
 if os.path.exists("data/token_ids.pt"):
     
     # Load pre encoded token ids
-    token_ids = torch.load("data/token_ids.pt")
+    token_ids = torch.load("data/token_ids.pt", weights_only=True)
     print("Token ids loaded!")
     
 else:
@@ -55,7 +55,7 @@ else:
     torch.save(token_ids, "data/token_ids.pt")
     print("Token ids encoded and saved!")
 
-vocab_size = 5000
+vocab_size = len(tokenizer.vocab)
 embedding_dimension = 256
 context_length = 256
 num_blocks = 4

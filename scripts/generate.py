@@ -7,7 +7,7 @@ tokenizer = BPETokenizer()
 # Load the vocab and merge rules for our dataset into our tokenizer
 tokenizer.load("data/tokenizer.json")
 
-vocab_size = 5000
+vocab_size = len(tokenizer.vocab)
 embedding_dimension = 256
 context_length = 256
 num_blocks = 4
@@ -26,7 +26,7 @@ model = Transformer(vocab_size, embedding_dimension, context_length, num_blocks,
 model = model.to(device) 
 
 # Load the model weights
-model.load_state_dict(torch.load("data/model.pth"))
+model.load_state_dict(torch.load("data/model.pth", weights_only=True))
 
 # Tell pytorch we are doing inference instead of training
 model.eval()
