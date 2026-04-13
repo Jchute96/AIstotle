@@ -65,7 +65,7 @@ class BPETokenizer:
             self.vocab[char] = int_id
             
         # Add the other special tokens used later for fine tuning
-        special_tokens = ["[QUESTION]", "[ANSWER]", "<|endoftext|>"]
+        special_tokens = ["[QUESTION]", "[ANSWER]"]
         
         for token in special_tokens:
             self.vocab[token] = len(self.vocab)

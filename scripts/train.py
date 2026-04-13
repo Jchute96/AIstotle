@@ -56,15 +56,15 @@ else:
     print("Token ids encoded and saved!")
 
 vocab_size = len(tokenizer.vocab)
-embedding_dimension = 256
-context_length = 256
-num_blocks = 4
-num_heads = 4
+embedding_dimension = 384
+context_length = 512
+num_blocks = 6
+num_heads = 8
 batch_size = 32
 # Controls the adjustment size in model numbers during training
 learning_rate = .0003
 # Controls how many times the training loop runs
-max_steps = 50000
+max_steps = 100000
 device = ""
 
 # Try to use GPU otherwise use CPU 
@@ -83,8 +83,22 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 token_ids = token_ids.to(device)
 
+os.makedirs("data/checkpoints", exist_ok=True)
+
+# Resume from the latest checkpoint if one exists
+start_step = 0
+checkpoint_files = [f for f in os.listdir("data/checkpoints") if f.startswith("checkpoint_")]
+
+if checkpoint_files:
+    latest = max(checkpoint_files, key=lambda x: int(x.split("_")[1].split(".")[0]))
+    checkpoint = torch.load(f"data/checkpoints/{latest}", weights_only=True)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    start_step = checkpoint['step']
+    print(f"Resuming from step {start_step}")
+
 # Perform the training loop
-for step in range(max_steps):
+for step in range(start_step, max_steps):
     
     # Get a batch of chunks and targets
     chunks, targets = get_batch(token_ids, batch_size, context_length)
@@ -107,6 +121,16 @@ for step in range(max_steps):
     # Print average loss every 500 steps to make sure number is decreasing over time
     if step % 500 == 0:
         print(f"Step {step} Loss: {loss.item():.4f}")
+
+    # Save a checkpoint every 5000 steps
+    if step % 5000 == 0 and step > 0:
+        torch.save({
+            'step': step,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'loss': loss,
+        }, f"data/checkpoints/checkpoint_{step}.pth")
+        print(f"Checkpoint saved at step {step}")
     
 # Save the model
 torch.save(model.state_dict(), "data/model.pth")

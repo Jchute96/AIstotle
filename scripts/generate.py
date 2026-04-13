@@ -8,10 +8,10 @@ tokenizer = BPETokenizer()
 tokenizer.load("data/tokenizer.json")
 
 vocab_size = len(tokenizer.vocab)
-embedding_dimension = 256
-context_length = 256
-num_blocks = 4
-num_heads = 4
+embedding_dimension = 384
+context_length = 512
+num_blocks = 6
+num_heads = 8
 device = ""
 
 # Try to use GPU otherwise use CPU 
@@ -66,5 +66,5 @@ def generate(prompt, max_new_tokens=100, temperature=0.1):
     # Decode and return the newly created response
     return tokenizer.decode(token_ids[0].tolist())
 
-print(generate("Who am I?", temperature=0.6))
+print(generate("How can I find happiness?", temperature=0.7))
 
