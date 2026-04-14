@@ -1,5 +1,6 @@
 import requests
 import re
+import unicodedata
 
 # Urls to the philosophy texts
 urls = {
@@ -86,8 +87,14 @@ def clean_text(text):
     
     # Replace all occurences of the windows new line representation to make everything consistent
     text = text.replace('\r\n', '\n')
+
+    # Normalize unicode so smart quotes and dashes become predictable before cleaning
+    text = unicodedata.normalize("NFKC", text)
+    text = text.replace("’", "'").replace("‘", "'")
+    text = text.replace("“", '"').replace("”", '"')
+    text = text.replace("—", "-").replace("–", "-")
     
-    # Remove non ASCII characters
+    # Remove any remaining non ASCII characters after normalization
     text = re.sub(r'[^\x00-\x7F]+', '', text)
 
     # Remove anything that is a set of brackets and any characters within
@@ -116,15 +123,21 @@ def clean_text(text):
     
     # Remove lines that start with chapter and have a title after the roman numerals
     text = re.sub(r'^CHAPTER\s+[IVXLCDM]+\.\s+[A-Z\s]+$', '', text, flags=re.MULTILINE)
+
+    # Remove chapter headers written as CHAP. II / BOOK II / PART II
+    text = re.sub(r'^\s*CHAP\.\s+[IVXLCDM]+\s*$', '', text, flags=re.MULTILINE)
+    text = re.sub(r'^\s*BOOK\s+[IVXLCDM]+\s*$', '', text, flags=re.MULTILINE)
+    text = re.sub(r'^\s*PART\s+[IVXLCDM]+\s*$', '', text, flags=re.MULTILINE)
     
     # Remove lines that start with not all caps Chapter and are followed by a roman numeral
     text = re.sub(r'^Chapter\s+[IVXLCDM]+\.\s*$', '', text, flags=re.MULTILINE)
     
-    # Remove lines that are at least 10 characters long and consist of only capital letters and spaces
-    text = re.sub(r'^[A-Z\s]{10,}$', '', text, flags=re.MULTILINE)
+    # Remove all-caps section headers and table-of-contents style headings
+    text = re.sub(r'^\s*[A-Z][A-Z\s,\-;:\'\"\?\!\.]{8,}\s*$', '', text, flags=re.MULTILINE)
     
     # Remove roman numeral lines that are by themselves
     text = re.sub(r'^[IVXLCDM]+\.\s*$', '', text, flags=re.MULTILINE)
+    text = re.sub(r'^\s*[IVXLCDM]+\s*$', '', text, flags=re.MULTILINE)
 
     # Remove digits that are by themselves
     text = re.sub(r'^\d+\.\s*$', '', text, flags=re.MULTILINE)
@@ -134,9 +147,17 @@ def clean_text(text):
     
     # Remove number prefixes from beginning of lines
     text = re.sub(r'^[0-9]+\.\s+', '', text, flags=re.MULTILINE)
+    text = re.sub(r'^[0-9]+\.\-+\s*', '', text, flags=re.MULTILINE)
     
     # Remove lines that are just asterisks and spaces
     text = re.sub(r'^\s*\*[\s\*]*$', '', text, flags=re.MULTILINE)
+
+    # Remove simple dialogue speaker labels like "A." or "M." at the start of a line
+    text = re.sub(r'^\s*[A-Z]\.\s+', '', text, flags=re.MULTILINE)
+
+    # Remove extra spaces before punctuation and collapse repeated spaces
+    text = re.sub(r'\s+([,;:\.\?!])', r'\1', text)
+    text = re.sub(r'[ \t]{2,}', ' ', text)
     
     # Replace single newlines with a space
     text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)
