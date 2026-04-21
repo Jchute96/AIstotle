@@ -2,6 +2,7 @@ import os
 import torch 
 import torch.nn
 from model import Transformer
+from model_utils import DEFAULT_MODEL_CONFIG, get_device, load_checkpoint_payload
 from tokenizer import BPETokenizer
 
 def get_batch(token_ids, batch_size, context_length):
@@ -56,22 +57,23 @@ else:
     print("Token ids encoded and saved!")
 
 vocab_size = len(tokenizer.vocab)
-embedding_dimension = 384
-context_length = 512
-num_blocks = 6
-num_heads = 8
+embedding_dimension = DEFAULT_MODEL_CONFIG["embedding_dimension"]
+context_length = DEFAULT_MODEL_CONFIG["context_length"]
+num_blocks = DEFAULT_MODEL_CONFIG["num_blocks"]
+num_heads = DEFAULT_MODEL_CONFIG["num_heads"]
 batch_size = 32
 # Controls the adjustment size in model numbers during training
 learning_rate = .0003
 # Controls how many times the training loop runs
 max_steps = 100000
-device = ""
-
-# Try to use GPU otherwise use CPU 
-if torch.backends.mps.is_available():
-    device = "mps"
-else:
-    device = "cpu"
+device = get_device()
+model_config = {
+    "vocab_size": vocab_size,
+    "embedding_dimension": embedding_dimension,
+    "context_length": context_length,
+    "num_blocks": num_blocks,
+    "num_heads": num_heads,
+}
 
 model = Transformer(vocab_size, embedding_dimension, context_length, num_blocks, num_heads)
 
@@ -91,11 +93,20 @@ checkpoint_files = [f for f in os.listdir("data/checkpoints") if f.startswith("c
 
 if checkpoint_files:
     latest = max(checkpoint_files, key=lambda x: int(x.split("_")[1].split(".")[0]))
-    checkpoint = torch.load(f"data/checkpoints/{latest}", weights_only=True)
-    model.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    start_step = checkpoint['step']
-    print(f"Resuming from step {start_step}")
+    checkpoint_path = f"data/checkpoints/{latest}"
+    checkpoint, checkpoint_state_dict, checkpoint_config = load_checkpoint_payload(checkpoint_path, device)
+
+    if checkpoint_config == model_config:
+        model.load_state_dict(checkpoint_state_dict)
+        optimizer_state = checkpoint.get("optimizer_state_dict")
+        if optimizer_state is not None:
+            optimizer.load_state_dict(optimizer_state)
+        start_step = checkpoint.get("step", 0)
+        print(f"Resuming from step {start_step}")
+    else:
+        print(
+            f"Skipping {latest} because its config {checkpoint_config} does not match the current model config {model_config}."
+        )
 
 # Perform the training loop
 for step in range(start_step, max_steps):
@@ -129,10 +140,14 @@ for step in range(start_step, max_steps):
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': loss,
+            'config': model_config,
         }, f"data/checkpoints/checkpoint_{step}.pth")
         print(f"Checkpoint saved at step {step}")
     
 # Save the model
-torch.save(model.state_dict(), "data/model.pth")
+torch.save({
+    "model_state_dict": model.state_dict(),
+    "config": model_config,
+}, "data/model.pth")
 print("Model has been saved!")
     

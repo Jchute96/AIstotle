@@ -7,7 +7,7 @@ tokenizer.load("data/tokenizer.json")
 
 answer_token_id = tokenizer.vocab["[ANSWER]"]
 
-with open("data/aistotle_qa1.txt", "r") as file:
+with open("data/aistotle_qa2.txt", "r") as file:
     text = file.read()
 
 # Split the file into individual q/a pairs
@@ -38,19 +38,25 @@ for example in examples:
     if len(full_sequence) > context_length:
         continue
     
-    # Copy the sequence to get our targets
-    targets = full_sequence.copy()
+    # Shift inputs and targets so each position predicts the next token
+    inputs = full_sequence[:-1]
+    targets = full_sequence[1:]
     
     # Find where answer starts and mask everything before and including it with -100
     answer_position = full_sequence.index(answer_token_id)
-    
-    for i in range(answer_position + 1):
+
+    # Ignore everything before the first answer token.
+    # The first token we train on should be the token after [ANSWER].
+    for i in range(answer_position):
         targets[i] = -100
-    
-    all_inputs.append(full_sequence)
+
+    all_inputs.append(inputs)
     all_targets.append(targets)
-    
+
 # Find the max length of the sequences in all inputs since we need we need them to be same size for our tensors
+if not all_inputs:
+    raise ValueError("No usable fine-tuning examples were found. Check the [QUESTION]...[ANSWER] format and context length.")
+
 max_len = max(len(sequence) for sequence in all_inputs)
 
 for i in range(len(all_inputs)):
